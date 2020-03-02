@@ -15,7 +15,7 @@
     - name: Start postgresql container for kong
       docker_container:
         name:  kong-database
-        image: "postgres:11"
+        image: "postgres:10"
         state: started
         published_ports:
           - 5432:5432

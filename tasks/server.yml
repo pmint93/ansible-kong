@@ -104,11 +104,11 @@
     target: "{{ kong_log_dir }}(/.*)?"
     setype: var_log_t
     state: present
-  when: ansible_os_family|lower == 'redhat' and kong_configure_selinux
+  when: kong_configure_selinux
 
 - name: Apply new SELinux file context to filesystem
   command: "restorecon -rv {{ kong_log_dir }}"
-  when: ansible_os_family|lower == 'redhat' and kong_configure_selinux
+  when: kong_configure_selinux
 
 - name: Check for supported kong versions
   fail: msg="Kong {{ kong_version }} no longer supported"

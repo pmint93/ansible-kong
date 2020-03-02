@@ -19,10 +19,6 @@
     kong_configure_firewalld: false
 
   pre_tasks:
-
-
-
-
     - name: Kong Migrations
       include_tasks: "roles/ansible-kong/test/integration/node1/kong-migration.yml"
       when: ansible_os_family|lower == 'debian'
