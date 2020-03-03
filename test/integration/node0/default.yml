@@ -2,31 +2,9 @@
 - name: Postgres start
   hosts: test-kitchen
 
-  vars:
-    docker_package_version: '*'
-    configure_firewalld: false
-    docker_configure_selinux: false
-
-
-  roles:
-    - o2-priority.docker
-
-  post_tasks:
-    - name: Start postgresql container for kong
-      docker_container:
-        name:  kong-database
-        image: "postgres:10"
-        state: started
-        published_ports:
-          - 5432:5432
-        env:
-          POSTGRES_USER: kong
-          POSTGRES_DB:   kong
-          POSTGRES_PASSWORD: kong
-      register: pgdb
-
+  tasks:
     - name: Wait for postgresql container to start
-      wait_for: host="127.0.0.1" port=5432
+      wait_for: host="172.20.4.2" port=5432
 
 
 - name: Kong Install
@@ -40,7 +18,7 @@
     kong_conf_dir: /etc/kong
     kong_host:  "node0.internal"
     kong_database:         postgres
-    kong_pg_host:          "node0.internal"
+    kong_pg_host:          "172.20.4.2"
     kong_proxy_listen:     "node0.internal:8000"
     kong_proxy_listen_ssl: "node0.internal:8443"
     kong_admin_listen:     "node0.internal:8001"
