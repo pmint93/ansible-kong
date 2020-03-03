@@ -19,16 +19,6 @@ provisioner:
     - github.com
 
 platforms:
-  - name: ubuntu-16.04
-    driver_config:
-      image: solita/ubuntu-systemd
-      platform: ubuntu
-      privileged: true
-      run_command: /sbin/init
-      provision_command:
-        - apt-get update --fix-missing
-        - apt-get install -y apt-transport-https iproute git python-pip curl
-        - pip install ansible pyopenssl
   - name: centos-7.2
     driver_config:
       image: centos/systemd
