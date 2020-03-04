@@ -215,13 +215,15 @@ information on Routes, Services, Consumer and Plugins configuration.
 
 To run integration tests of this role
 
-PLATFORM = ubuntu or centos
 ```
-kitchen test $PLATFORM --destroy=never && docker kill node0 node1 && docker rm node0 node1
+kitchen test centos --destroy=never && docker kill node0 node1 && docker rm node0 node1
 ```
 
 > **Note:**
 > `--destroy=never` must be supplied because two nodes are required to be running for all the tests to pass. As a consequence of this `$PLATFORM` must also be specified for the `kitchen test` command otherwise it will not work because of the `instance_name` property. The `docker` commands remove the left over containers for the next platform run
+
+> **Note:**
+> Docker-in-Docker doesn't work on Linux (AUFS 'already stacked' error). The Postgres container runs seperately on the Kitchen host (rather than from inside the container started by Kitchen).
 
 ## Dependencies
 none

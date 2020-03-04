@@ -7,7 +7,7 @@
     kong_version: 0.13.1
     kong_version_current: 0.0.0
     kong_host:  "node1.internal"
-    kong_pg_host:          "node0.internal"
+    kong_pg_host:          "172.20.4.2"
     kong_proxy_listen:     "node1.internal:8000"
     kong_proxy_listen_ssl: "node1.internal:8443"
     kong_cluster_listen:   "node1.internal:7946"
@@ -15,6 +15,8 @@
     kong_proxy_set_headers:
       "X-Forwarded-Prefix": '$http_x_forwarded_prefix'
     kong_admin_listen:     "0.0.0.0:8001"  # DELETEME PLS (Testing purpose ONLY)
+    kong_configure_selinux: false
+    kong_configure_firewalld: false
 
   pre_tasks:
     - name: Kong Migrations

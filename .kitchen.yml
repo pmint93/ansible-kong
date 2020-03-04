@@ -19,16 +19,6 @@ provisioner:
     - github.com
 
 platforms:
-  - name: ubuntu-16.04
-    driver_config:
-      image: solita/ubuntu-systemd
-      platform: ubuntu
-      privileged: true
-      run_command: /sbin/init
-      provision_command:
-        - apt-get update --fix-missing
-        - apt-get install -y apt-transport-https iproute git python-pip curl
-        - pip install ansible pyopenssl
   - name: centos-7.2
     driver_config:
       image: centos/systemd
@@ -36,7 +26,7 @@ platforms:
       privileged: true
       run_command: /sbin/init
       provision_command:
-        - yum install -y iproute tuned epel-release ansible git
+        - yum install -y iproute tuned epel-release ansible git cronie libselinux-python policycoreutils-python
         # https://github.com/CentOS/CentOS-Dockerfiles/issues/173
         - systemctl enable systemd-user-sessions.service && ln -s /usr/lib/systemd/system/systemd-user-sessions.service /etc/systemd/system/default.target.wants/systemd-user-sessions.service
 
@@ -45,16 +35,57 @@ verifier:
   default_pattern: true
 
 suites:
+  - name: postgres
+    driver_config:
+      instance_name: postgres
+      image: postgres:10
+      platform: debian
+      publish_all: true
+      run_command: /sbin/init
+      provision_command:
+        - apt-get -y --no-install-recommends install systemd-sysv initscripts
+        - systemctl enable ssh
+      run_options:
+        network: kong-net
+        ip: 172.20.4.2
+        env:
+          - POSTGRES_PASSWORD=kong
+          - POSTGRES_USER=kong
+          - POSTGRES_DB=kong
+    lifecycle:
+      post_create:
+        # This is how the postgres container actually should be started.
+        # However, we have to start it with the `run_command` above in order to get SSH for Kitchen to work
+        - local: echo 'POST_CREATE - starting postgres' && docker exec -d postgres /usr/local/bin/docker-entrypoint.sh postgres
+    provisioner:
+      name: dummy
+    verifier:
+      name: dummy
+
   - name: node0
     driver_config:
       hostname: node0.internal
       instance_name: node0
+      run_options:
+        network: kong-net
 
   - name: node1
     driver_config:
       hostname: node1.internal
       instance_name: node1
-      links: node0
+      run_options:
+        network: kong-net
 
 transport:
+  max_ssh_sessions: 4
   forward_agent: true
+
+lifecycle:
+  pre_create:
+    - docker network create kong-net --subnet=172.20.4.0/24 || true
+
+  # Can't use this - Lifecycle Hooks are bound to an individual Suite lifecycle, not the overall run
+  # post_verify:
+  #   - docker network rm kong-net
+  #   - docker kill postgres
+  #   - docker rm postgre
