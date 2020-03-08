@@ -131,6 +131,27 @@
       kong_delete_service_obj: true
       kong_service_config:
         name: svcFour
+    #----------------------------------------------------#
+    #   reportingService & Routes - test internal/external ACLs   #
+    #----------------------------------------------------#
+    - role: ansible-kong
+      kong_task: service
+      kong_service_config:
+        name: reportingService
+        url: "https://mockbin.org/status/200/reporting-service"
+    - role: ansible-kong
+      kong_task: route
+      kong_route_config:
+        name: reportingServiceOpen
+        service: reportingService
+        paths: [ "/reporting-service" ]
+    - role: ansible-kong
+      kong_task: route
+      kong_route_config:
+        name: reportingServiceSecure
+        service: reportingService
+        paths: [ "/reporting-service/realtime" ]
+
     #*************************#
     #   UPSTREAMS & TARGETS   #
     #*************************#
@@ -278,6 +299,32 @@
           - name: jwt
             parameters:
               key: "a4221446f5d845f48bd473df8242e08a"
+
+    - role: ansible-kong
+      kong_use_old_config_format: false
+      kong_task: consumer
+      kong_consumer_config:
+        username: reportingServiceConsumerExternal
+        plugins:
+          - name: acl
+            parameters:
+              groups: [ reportingServiceExternalGroup ]
+          - name: key-auth
+            parameters:
+              key: "5-external"
+    - role: ansible-kong
+      kong_use_old_config_format: false
+      kong_task: consumer
+      kong_consumer_config:
+        username: reportingServiceConsumerInternal
+        plugins:
+          - name: acl
+            parameters:
+              groups: [ reportingServiceInternalGroup ]
+          - name: key-auth
+            parameters:
+              key: "5-internal"
+
     #****************#
     #    PLUGINS     #
     #****************#
@@ -368,3 +415,29 @@
         name: acl
         service: svcTwo
         config: { whitelist: svcTwo-user-group }
+
+    - role: ansible-kong
+      kong_task: plugin
+      kong_plugin_config:
+        name: key-auth
+        route: "reportingServiceOpen"
+        config: { key_names: "X-Api-Key" }
+    - role: ansible-kong
+      kong_task: plugin
+      kong_plugin_config:
+        name: acl
+        route: "reportingServiceOpen"
+        config: { whitelist: "reportingServiceExternalGroup" }
+
+    - role: ansible-kong
+      kong_task: plugin
+      kong_plugin_config:
+        name: key-auth
+        route: "reportingServiceSecure"
+        config: { key_names: "X-Api-Key" }
+    - role: ansible-kong
+      kong_task: plugin
+      kong_plugin_config:
+        name: acl
+        route: "reportingServiceSecure"
+        config: { whitelist: "reportingServiceInternalGroup" }
