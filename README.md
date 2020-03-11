@@ -18,9 +18,7 @@ information on Routes, Services, Consumer and Plugins configuration.
 >     -  Support for v0.12.x and earlier deprecated and will be removed SOON!!
 
 
-## Example
-
-### Install Kong
+## Install Kong
 
 ```
 - hosts: konghost
@@ -37,7 +35,7 @@ information on Routes, Services, Consumer and Plugins configuration.
 ```
 
 
-### Add/Update/Delete kong objects
+## Add/Update/Delete kong objects
 
 ```
 - hosts: my-kong-host
@@ -148,20 +146,6 @@ information on Routes, Services, Consumer and Plugins configuration.
         name: rate-limiting
         config: { minute: 50, hour: 500 }
       kong_delete_plugin_obj: false
-    - role: ansible-kong            ## ADD rate-limiting plugin obj for svcOneRoute1 route
-      kong_task: plugin
-      kong_plugin_config:
-        name: rate-limiting
-        route: svcOneRoute1
-        config: { minute: 20, hour: 500 }
-    - role: ansible-kong            ## ADD/UPDATE rate-limiting plugin obj for svcOne service and consumerOne consumer
-      kong_task: plugin
-      kong_plugin_config:
-        name: rate-limiting
-        service: svcOne
-        consumer: consumerOne
-        config: { minute: 20, hour: 500 }
-      kong_delete_plugin_obj: false
     - role: ansible-kong            ## DELETE rate-limiting plugin obj for svcOne service and consumerOne consumer
       kong_task: plugin
       kong_plugin_config:
@@ -211,19 +195,100 @@ information on Routes, Services, Consumer and Plugins configuration.
         config: { whitelist: "svcOne-user-group, another-user-group" }
 ```
 
-## Testing
+## Routes, Path Matching and ACLs
+
+Kong uses different [algorithms](https://docs.konghq.com/2.0.x/admin-api/#path-handling-algorithms) to calculate how to go from a Request -> Route -> Service -> Proxy Request.
+Currently we use `v0` with `strip_path=true` for all Routes.
+
+|service.path|route.path|route.strip_path|route.path_handling|request path|proxied path|
+|------------|----------|----------------|-------------------|------------|------------|
+|/s 	       |/tv0/     | true 	         | v0 	             | /tv0/req   | /s/req     |
+
+Most matching we do is via the [Request Path](https://docs.konghq.com/0.13.x/proxy/#request-path),
+we typlically don't match based on `host` or `method`, therefore "**a client request's path must be prefixed with one of the values of the paths attribute.**"
+
+### Reporting Service Routing Example
+
+|#|request path                           |route.path                                               |service.path                 |proxied path                                 |
+|-|---------------------------------------|---------------------------------------------------------|-----------------------------|---------------------------------------------|
+|1|/reporting-service/realtime            |[/reporting-service, /reporting-service/realtime]        |/reporting-service/reporting |/reporting-service/reporting                 |
+|2|/reporting-service/personalcontent     |[/reporting-service, /reporting-service/realtime]        |/reporting-service/reporting |/reporting-service/reporting/personalcontent |
+|3|/reporting-service/realtime            |[/reporting-service, /realtime]                          |/reporting-service/reporting |/reporting-service/reporting/realtime        |
+|4|/reporting-service/restricted/realtime |[/reporting-service <sup>[1]</sup>, /reporting-service/restricted <sup>[2]</sup>]      |/reporting-service/reporting |/reporting-service/reporting/realtime        |
+
+> Request #1:
+* `/reporting-service/realtime` matches 2nd Route path
+* Intermediary path is `[/reporting-service/reporting][/reporting-service/realtime]` (Service path + Request path)
+* `strip_path=true` so `/reporting-service/realtime` is removed (because this is the **Route** path which was **matched**) leaving `/reporting-service/reporting` as the proxied path
+
+> Request #2:
+* `/reporting-service/personalcontent` matches 1st Route path due to [path matching](https://docs.konghq.com/0.13.x/proxy/#request-path) rules
+* Intermediary path is `[/reporting-service/reporting][/reporting-service/personalcontent]`
+* `strip_path=true` so `/reporting-service` is removed leaving `/reporting-service/reporting/personalcontent` as the proxied path
+
+> Request #3:
+* `/reporting-service/realtime` matches 1st Route path - the request path must be **prefixed** with one of the values of the paths attribute
+* Intermediary path is `[/reporting-service/reporting][/reporting-service/realtime]`
+* `strip_path=true` so `/reporting-service` is removed leaving `/reporting-service/reporting/realtime` as the proxied path
+
+> Request #4:
+* `/reporting-service/restricted/realtime` matches 2nd Route path
+* Intermediary path is `[/reporting-service/reporting][/reporting-service/restricted/realtime]`
+* `strip_path=true` so `/reporting-service/restricted` is removed leaving `/reporting-service/reporting/realtime` as the proxied path
+* Different ACLs can be applied depending on Route matched <sup>[1]</sup> and <sup>[2]</sup>. See ACLs section below.
+
+### ACLs
+
+An ACL plugin can be applied to a Route, Service or Globally. The plugin [precedence rules](https://docs.konghq.com/0.13.x/admin-api/#precedence) decide which plugin configuration to choose.
+Requests #3 and #4 above are matched by the 1st and 2nd Route paths respectively. Depending on which Route path is matched determines which ACLs are applied.
+
+For example, in Request #3 `/reporting-service` was the matched Route path, therefore any ACL plugins which have been applied to **this Route object** will be applied.
+
+With Request #4 `/reporting-service/restricted` was the matched path, therefore any ACL plugins associated with this Route object will be applied. Restricted ACL <sup>[2]</sup> is applied here.
+
+### Shortcutting Paths
+All of the Routes configured for Services follow the pattern of having a catch-all Route path, e.g. `/reporting-service`. This allows any API requests to be mapped to an Upstream without any addition configuration.
+
+For example, creating Upstream endpoints `personalcontent` or `events/registration` will allow requests `/reporting-service/personalcontent` and `/reporting-service/events/registration` without any addition Kong configuration.
+
+However, if a separate Route is applying a different ACL to a particular path, then it needs to be excluded from the catch-all Route.
+
+#### Example
+
+* Route A -> paths `[/reporting-service]`            (`ACL 1` restrictions applied)
+* Route B -> paths `[/reporting-service/restricted]` (`ACL 2` restrictions applied)
+
+| | | | | | | |
+|-|-|-|-|-|-|-|
+|`ACL 1` credentials |-> |request `/reporting-service/realtime` |-> |matches Route A |-> |Upstream `/reporting-service/reporting/realtime`|
+|`ACL 2` credentials |-> |request `/reporting-service/restricted/realtime` |-> |matches Route B |-> |Upstream `/reporting-service/reporting/realtime`|
+
+Because of Kong's `strip_path` functionality, both requests map correctly to the Upstream service. However, we don't want `ACL 1` credentials access to be able to request `/reporting-service/realtime`, it should only be possible to request it via `/reporting-service/restricted/realtime` using `ACL 2` credentials.
+
+The workaround for this, counterintuitively, is to add the path you **want** to restrict to the Route you **don't want** it to access
+
+* Route A -> paths `[/reporting-service, /reporting-service/realtime]` (`ACL 1` restrictions applied)
+
+This shortcuts Kong's path matching and `strip_path` functionality to produce the following invalid route:
+
+| | | | | | | |
+|-|-|-|-|-|-|-|
+|`ACL 1` credentials |-> |request `/reporting-service/realtime` |-> |matches Route A |-> |Upstream `/reporting-service/reporting`|
+
+
+## Testing ##
 
 To run integration tests of this role
 
 ```
-kitchen test centos --destroy=never && docker kill node0 node1 && docker rm node0 node1
+kitchen test --destroy=never && docker kill node0 node1 postgres && docker rm node0 node1 postgres
 ```
 
 > **Note:**
-> `--destroy=never` must be supplied because two nodes are required to be running for all the tests to pass. As a consequence of this `$PLATFORM` must also be specified for the `kitchen test` command otherwise it will not work because of the `instance_name` property. The `docker` commands remove the left over containers for the next platform run
+> `--destroy=never` must be supplied because two nodes are required to be running for all the tests to pass. The `docker` commands remove the left over containers for the next platform run.
 
 > **Note:**
-> Docker-in-Docker doesn't work on Linux (AUFS 'already stacked' error). The Postgres container runs seperately on the Kitchen host (rather than from inside the container started by Kitchen).
+> Docker-in-Docker doesn't work on Linux (AUFS 'already stacked' error). The Postgres container runs locally (i.e. Kitchen host) rather than from inside the container started by Kitchen.
 
 ## Dependencies
 none

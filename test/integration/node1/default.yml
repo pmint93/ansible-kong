@@ -138,19 +138,19 @@
       kong_task: service
       kong_service_config:
         name: reportingService
-        url: "https://mockbin.org/status/200/reporting-service"
+        url: "https://mockbin.org/request/reporting-service/reporting"
     - role: ansible-kong
       kong_task: route
       kong_route_config:
         name: reportingServiceOpen
         service: reportingService
-        paths: [ "/reporting-service" ]
+        paths: [ "/reporting-service", "/reporting-service/realtime" ]
     - role: ansible-kong
       kong_task: route
       kong_route_config:
         name: reportingServiceSecure
         service: reportingService
-        paths: [ "/reporting-service/realtime" ]
+        paths: [ "/reporting-service/restricted" ]
 
     #*************************#
     #   UPSTREAMS & TARGETS   #

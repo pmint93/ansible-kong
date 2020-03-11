@@ -159,11 +159,11 @@ end
 
 
 # no API keys #
-describe command("curl -s -w ':%{http_code}' http://node1.internal:8000/reporting-service | tr -d '[:space:]'") do
+describe command("curl -s -w ':%{http_code}' http://node1.internal:8000/reporting-service | tr -d '\n'") do
   its(:stdout) { should match "{\"message\":\"No API key found in request\"}:401" }
 end
 
-describe command("curl -s -w ':%{http_code}' http://node1.internal:8000/reporting-service/realtime | tr -d '[:space:]'") do
+describe command("curl -s -w ':%{http_code}' http://node1.internal:8000/reporting-service/realtime | tr -d '\n'") do
   its(:stdout) { should match "{\"message\":\"No API key found in request\"}:401" }
 end
 ################
@@ -180,15 +180,23 @@ end
 describe command("curl -H 'X-Api-Key: invalid-key-3' -w ':%{http_code}' http://node1.internal:8000/reporting-service/no-url | tr -d '\n'") do
   its(:stdout) { should match "{\"message\":\"Invalid authentication credentials\"}:403" }
 end
+
+describe command("curl -H 'X-Api-Key: invalid-key-3' -w ':%{http_code}' http://node1.internal:8000/reporting-service/restricted/realtime | tr -d '\n'") do
+  its(:stdout) { should match "{\"message\":\"Invalid authentication credentials\"}:403" }
+end
 #########################
 
 # valid keys #
-describe command("curl -H 'X-Api-Key: 5-external' -w ':%{http_code}' http://node1.internal:8000/reporting-service | tr -d '[:space:]'") do
-  its(:stdout) { should match "{\"code\":\"200\",\"message\":\"reporting-service\"}:200" }
+describe command("curl -H 'X-Api-Key: 5-external' -s http://node1.internal:8000/reporting-service | jq -r '.url'") do
+  its(:stdout) { should match "http://mockbin.org/request/reporting-service/reporting" }
 end
 
-describe command("curl -H 'X-Api-Key: 5-internal' -w ':%{http_code}' http://node1.internal:8000/reporting-service/realtime | tr -d '[:space:]'") do
-  its(:stdout) { should match "{\"code\":\"200\",\"message\":\"reporting-service\"}:200" }
+describe command("curl -H 'X-Api-Key: 5-external' -s http://node1.internal:8000/reporting-service/personalcontent | jq -r '.url'") do
+  its(:stdout) { should match "http://mockbin.org/request/reporting-service/reporting/personalcontent" }
+end
+
+describe command("curl -H 'X-Api-Key: 5-internal' -s http://node1.internal:8000/reporting-service/restricted/realtime | jq -r '.url'") do
+  its(:stdout) { should match "http://mockbin.org/request/reporting-service/reporting/realtime" }
 end
 ##############
 
@@ -197,7 +205,19 @@ describe command("curl -H 'X-Api-Key: 5-internal' -w ':%{http_code}' http://node
   its(:stdout) { should match "{\"message\":\"You cannot consume this service\"}:403" }
 end
 
-describe command("curl -H 'X-Api-Key: 5-external' -w ':%{http_code}' http://node1.internal:8000/reporting-service/realtime | tr -d '\n'") do
+describe command("curl -H 'X-Api-Key: 5-internal' -w ':%{http_code}' http://node1.internal:8000/reporting-service/realtime | tr -d '\n'") do
   its(:stdout) { should match "{\"message\":\"You cannot consume this service\"}:403" }
 end
+
+# although this test doesn't produce an unauthorized response, it's resulting upstream URL is invalid and will not correct route
+# see README (Shortcutting Paths) for more details
+describe command("curl -H 'X-Api-Key: 5-external' -s http://node1.internal:8000/reporting-service/realtime | jq -r '.url'") do
+  its(:stdout) { should match "http://mockbin.org/request/reporting-service/reporting" }
+end
+
+describe command("curl -H 'X-Api-Key: 5-external' -w ':%{http_code}' http://node1.internal:8000/reporting-service/restricted/realtime | tr -d '\n'") do
+  its(:stdout) { should match "{\"message\":\"You cannot consume this service\"}:403" }
+end
+
+
 ######################
