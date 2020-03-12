@@ -16,13 +16,16 @@
      url:    "{{ kong_admin_api_url }}/consumers/{{ kong_consumer_config.username }}/{{ outer_item.name }}"
      body:   "{{  outer_item.parameters }}"
      method: POST
-     status_code: 201
+     status_code: "201,409"
      body_format: json
   register: created
   when: not outer_item.parameters.key in current_key_auth_creds.json.data|map(attribute='key')|list
   until: created is succeeded
   retries: 10
   delay: 5
+
+- debug: msg="WARN - 409 Conflict detected - {{ created }}"
+  when: created.status is defined and created.status == 409
 
 - name: Get authentication credentials id | {{ outer_item.name }}
   template:

@@ -22,7 +22,7 @@
   set_fact:
     _kong_route_obj: "{{ kong_route_config_new|combine({'service': {'id': route_service_id}}) }}"
 
-#- debug: var=_kong_route_obj
+- debug: msg="Kong route object {{ _kong_route_obj }}"
 
 - name: Add new route object to kong service object
   uri:
