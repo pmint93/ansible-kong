@@ -198,6 +198,12 @@ end
 describe command("curl -H 'X-Api-Key: 5-internal' -s http://node1.internal:8000/reporting-service/restricted/realtime | jq -r '.url'") do
   its(:stdout) { should match "http://mockbin.org/request/reporting-service/reporting/realtime" }
 end
+
+# this test currently passes (but ideally shouldn't). It means the /restricted endpoint is too open and should only allow requests to /restricted/realtime
+# but the way the `strip_path` functionality works stops us using a more specific path in the Route
+describe command("curl -H 'X-Api-Key: 5-internal' -s http://node1.internal:8000/reporting-service/restricted/personalcontent | jq -r '.url'") do
+  its(:stdout) { should match "http://mockbin.org/request/reporting-service/reporting/personalcontent" }
+end
 ##############
 
 # unauthorized keys #
@@ -218,6 +224,4 @@ end
 describe command("curl -H 'X-Api-Key: 5-external' -w ':%{http_code}' http://node1.internal:8000/reporting-service/restricted/realtime | tr -d '\n'") do
   its(:stdout) { should match "{\"message\":\"You cannot consume this service\"}:403" }
 end
-
-
 ######################
