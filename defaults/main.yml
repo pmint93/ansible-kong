@@ -9,9 +9,11 @@ kong_version: 0.13.1
 kong_version_string:      "{{ kong_version|string }}"
 kong_major_minor_version: "{{ kong_version_string.split('.')|first }}.{{ kong_version_string.split('.')[1] }}"
 kong_deb_pkg:     "kong-community-edition-{{ kong_version }}.{{ ansible_distribution_release }}.all.deb"
-kong_rpm_pkg:     "kong-community-edition-{{ kong_version }}.el7.noarch.rpm"
+kong_rpm_pkg:     "kong-{{ kong_version }}.el7.noarch.rpm"
 kong_deb_pkg_url: "https://kong.bintray.com/kong-community-edition-deb/dists/{{ kong_deb_pkg }}"
-kong_rpm_pkg_url: "https://kong.bintray.com/kong-community-edition-rpm/centos/7/{{ kong_rpm_pkg }}"
+#kong_rpm_pkg_url: "https://kong.bintray.com/kong-community-edition-rpm/centos/7/{{ kong_rpm_pkg }}"
+kong_rpm_pkg_url: "https://download.konghq.com/gateway-0.x-centos-7/Packages/k/{{ kong_rpm_pkg }}"
+
 
 kong_deb_pkg_pre_0_11_x:     "kong-{{ kong_version }}.{{ ansible_distribution_release }}_all.deb"
 kong_rpm_pkg_pre_0_11_x:     "kong-{{ kong_version }}.el7.noarch.rpm"
