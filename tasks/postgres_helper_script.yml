@@ -18,6 +18,11 @@
     state: present
   when: ansible_os_family|lower == 'redhat'
 
+## added this for fixing pgdg-common repo issue: signature could not be verified for pgdg-common
+- name: verify repo list
+  command: "yum repolist -y"
+  when: ansible_os_family|lower == 'redhat'
+
 - name: Install postgresql client package
   package:
     name: "{{ postgresql_client_package }}"
