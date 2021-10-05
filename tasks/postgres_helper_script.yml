@@ -16,6 +16,7 @@
   yum:
     name: "{{ postgresql_yum_repo_package }}"
     state: present
+    validate_certs: no
   when: ansible_os_family|lower == 'redhat'
 
 ## added this for fixing pgdg-common repo issue: signature could not be verified for pgdg-common
