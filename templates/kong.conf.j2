@@ -23,28 +23,18 @@
 # GENERAL
 #------------------------------------------------------------------------------
 
-prefix = {{ kong_nginx_working_dir }}
 #prefix = /usr/local/kong/       # Working directory. Equivalent to Nginx's
                                  # prefix path, containing temporary files
                                  # and logs.
                                  # Each Kong process must have a separate
                                  # working directory.
 
-log_level = {{ kong_log_level }}
 #log_level = notice              # Log level of the Nginx server. Logs are
                                  # found at <prefix>/logs/error.log.
 
 # Note: see http://nginx.org/en/docs/ngx_core_module.html#error_log for a list
 # of accepted values.
 
-{% if kong_proxy_access_log != 'off' %}
-{% if kong_nginx_json_log_format_enable|default(false) and not kong_proxy_access_log|match('.*custom_json$') %}
-{% set kong_proxy_access_log = kong_proxy_access_log + ' custom_json' %}
-{% elif kong_nginx_custom_log_fields|default([]) and not kong_proxy_access_log|match('.*custom$') %}
-{% set kong_proxy_access_log = kong_proxy_access_log + ' custom' %}
-{% endif %}
-{% endif %}
-proxy_access_log = {{ kong_proxy_access_log }}
 #proxy_access_log = logs/access.log       # Path for proxy port request access
                                           # logs. Set this value to `off` to
                                           # disable logging proxy requests.
@@ -52,20 +42,11 @@ proxy_access_log = {{ kong_proxy_access_log }}
                                           # it will be placed under the
                                           # `prefix` location.
 
-proxy_error_log = {{ kong_proxy_error_log }}
 #proxy_error_log = logs/error.log         # Path for proxy port request error
                                           # logs. Granularity of these logs is
                                           # adjusted by the `log_level`
                                           # directive.
 
-{% if kong_admin_access_log != 'off' %}
-{% if kong_nginx_json_log_format_enable|default(false) and not kong_admin_access_log|match('.*custom_json$') %}
-{% set kong_admin_access_log = kong_admin_access_log + ' custom_json' %}
-{% elif kong_nginx_custom_log_fields|default([]) and not kong_admin_access_log|match('.*custom$') %}
-{% set kong_admin_access_log = kong_admin_access_log + ' custom' %}
-{% endif %}
-{% endif %}
-admin_access_log = {{ kong_admin_access_log }}
 #admin_access_log = logs/admin_access.log # Path for Admin API request access
                                           # logs. Set this value to `off` to
                                           # disable logging Admin API requests.
@@ -73,13 +54,11 @@ admin_access_log = {{ kong_admin_access_log }}
                                           # it will be placed under the
                                           # `prefix` location.
 
-admin_error_log = {{ kong_admin_error_log }}
 #admin_error_log = logs/error.log         # Path for Admin API request error
                                           # logs. Granularity of these logs is
                                           # adjusted by the `log_level`
                                           # directive.
 
-custom_plugins = {{ kong_custom_plugins|join(',') }}
 #custom_plugins =                # Comma-separated list of additional plugins
                                  # this node should load.
                                  # Use this property to load custom plugins
@@ -87,7 +66,6 @@ custom_plugins = {{ kong_custom_plugins|join(',') }}
                                  # Plugins will be loaded from the
                                  # `kong.plugins.{name}.*` namespace.
 
-anonymous_reports = {{ kong_anonymous_reports|default('on')|lower }}
 #anonymous_reports = on          # Send anonymous usage data such as error
                                  # stack traces to help improve Kong.
 
@@ -95,11 +73,6 @@ anonymous_reports = {{ kong_anonymous_reports|default('on')|lower }}
 # NGINX
 #------------------------------------------------------------------------------
 
-{% if kong_proxy_listen is string %}
-proxy_listen = {{ kong_proxy_listen }}
-{% else %}
-proxy_listen = {{ kong_proxy_listen|join(", ") }}
-{% endif %}
 #proxy_listen = 0.0.0.0:8000, 0.0.0.0:8443 ssl
                          # Comma-separated list of addresses and ports on
                          # which the proxy server should listen.
@@ -128,11 +101,6 @@ proxy_listen = {{ kong_proxy_listen|join(", ") }}
 # Note bis: see https://www.nginx.com/resources/admin-guide/proxy-protocol/
 # for more details about the `proxy_protocol` parameter.
 
-{% if kong_admin_listen is string %}
-admin_listen = {{ kong_admin_listen }}
-{% else %}
-admin_listen = {{ kong_admin_listen|join(", ") }}
-{% endif %}
 #admin_listen = 127.0.0.1:8001, 127.0.0.1:8444 ssl
                          # Comma-separated list of addresses and ports on
                          # which the Admin interface should listen.
@@ -156,29 +124,24 @@ admin_listen = {{ kong_admin_listen|join(", ") }}
                          # capabilities) pulling its configuration changes
                          # from the database.
 
-nginx_user = {{ kong_nginx_user }}
 #nginx_user = nobody nobody      # Defines user and group credentials used by
                                  # worker processes. If group is omitted, a
                                  # group whose name equals that of user is
                                  # used. Ex: [user] [group].
 
-nginx_worker_processes = {{ kong_nginx_worker_processes }}
 #nginx_worker_processes = auto   # Determines the number of worker processes
                                  # spawned by Nginx.
 
-nginx_daemon = {{ kong_nginx_daemon|default('on')|lower }}
 #nginx_daemon = on               # Determines wether Nginx will run as a daemon
                                  # or as a foreground process. Mainly useful
                                  # for development or when running Kong inside
                                  # a Docker environment.
 
-mem_cache_size = {{ kong_mem_cache_size }}
 #mem_cache_size = 128m           # Size of the in-memory cache for database
                                  # entities. The accepted units are `k` and
                                  # `m`, with a minimum recommended value of
                                  # a few MBs.
 
-ssl_cipher_suite = {{ kong_ssl_cipher_suite }}
 #ssl_cipher_suite = modern       # Defines the TLS ciphers served by Nginx.
                                  # Accepted values are `modern`,
                                  # `intermediate`, `old`, or `custom`.
@@ -186,26 +149,21 @@ ssl_cipher_suite = {{ kong_ssl_cipher_suite }}
 # Note: see https://wiki.mozilla.org/Security/Server_Side_TLS for detailed
 # descriptions of each cipher suite.
 
-ssl_ciphers = {{ kong_ssl_ciphers|default('') }}
 #ssl_ciphers =                   # Defines a custom list of TLS ciphers to be
                                  # served by Nginx. This list must conform to
                                  # the pattern defined by `openssl ciphers`.
                                  # This value is ignored if `ssl_cipher_suite`
                                  # is not `custom`.
 
-ssl_cert = {{ kong_ssl_cert|default('') }}
 #ssl_cert =                      # The absolute path to the SSL certificate for
                                  # `proxy_listen` values with SSL enabled.
 
-ssl_cert_key = {{ kong_ssl_cert_key|default('') }}
 #ssl_cert_key =                  # The absolute path to the SSL key for
                                  # `proxy_listen` values with SSL enabled.
 
-client_ssl = {{ kong_client_ssl|default('off') }}
 #client_ssl = off                # Determines if Nginx should send client-side
                                  # SSL certificates when proxying requests.
 
-client_ssl_cert = {{ kong_client_ssl_cert|default('') }}
 #client_ssl_cert =               # If `client_ssl` is enabled, the absolute
                                  # path to the client SSL certificate for the
                                  # `proxy_ssl_certificate` directive. Note that
@@ -213,7 +171,6 @@ client_ssl_cert = {{ kong_client_ssl_cert|default('') }}
                                  # node, and currently cannot be configured on
                                  # a per-API basis.
 
-client_ssl_cert_key = {{ kong_client_ssl_cert_key|default('') }}
 #client_ssl_cert_key =           # If `client_ssl` is enabled, the absolute
                                  # path to the client SSL key for the
                                  # `proxy_ssl_certificate_key` address. Note
@@ -221,34 +178,28 @@ client_ssl_cert_key = {{ kong_client_ssl_cert_key|default('') }}
                                  # node, and currently cannot be configured on
                                  # a per-API basis.
 
-admin_ssl_cert = {{ kong_admin_ssl_cert|default('') }}
 #admin_ssl_cert =                # The absolute path to the SSL certificate for
                                  # `admin_listen` values with SSL enabled.
 
-admin_ssl_cert_key = {{ kong_admin_ssl_cert_key|default('') }}
 #admin_ssl_cert_key =            # The absolute path to the SSL key for
                                  # `admin_listen` values with SSL enabled.
 
-upstream_keepalive = {{ kong_upstream_keepalive|default(60) }}
 #upstream_keepalive = 60         # Sets the maximum number of idle keepalive
                                  # connections to upstream servers that are
                                  # preserved in the cache of each worker
                                  # process. When this number is exceeded, the
                                  # least recently used connections are closed.
 
-server_tokens = {{ kong_server_tokens|default('on') }}
 #server_tokens = on              # Enables or disables emitting Kong version on
                                  # error pages and in the "Server" or "Via"
                                  # (in case the request was proxied) response
                                  # header field.
 
-latency_tokens = {{ kong_latency_tokens|default('on') }}
 #latency_tokens = on             # Enables or disables emitting Kong latency
                                  # information in the "X-Kong-Proxy-Latency"
                                  # and "X-Kong-Upstream-Latency" response
                                  # header fields.
 
-trusted_ips = {{ kong_trusted_ips|default('') }}
 #trusted_ips =                   # Defines trusted IP addresses blocks that are
                                  # known to send correct X-Forwarded-* headers.
                                  # Requests from trusted IPs make Kong forward
@@ -271,7 +222,6 @@ trusted_ips = {{ kong_trusted_ips|default('') }}
 # Note: see http://nginx.org/en/docs/http/ngx_http_realip_module.html for
 # examples of accepted values.
 
-real_ip_header = {{ kong_real_ip_header }}
 #real_ip_header = X-Real-IP      # Defines the request header field whose value
                                  # will be used to replace the client address.
                                  # This value sets the ngx_http_realip_module
@@ -284,7 +234,6 @@ real_ip_header = {{ kong_real_ip_header }}
 # Note: see http://nginx.org/en/docs/http/ngx_http_realip_module.html#real_ip_header
 # for a description of this directive.
 
-real_ip_recursive = {{ kong_real_ip_recursive|default('off') }}
 #real_ip_recursive = off         # This value sets the ngx_http_realip_module
                                  # directive of the same name in the Nginx
                                  # configuration.
@@ -292,7 +241,6 @@ real_ip_recursive = {{ kong_real_ip_recursive|default('off') }}
 # Note: see http://nginx.org/en/docs/http/ngx_http_realip_module.html#real_ip_recursive
 # for a description of this directive.
 
-client_max_body_size = {{ kong_client_max_body_size }}
 #client_max_body_size = 0        # Defines the maximum request body size allowed
                                  # by requests proxied by Kong, specified in
                                  # the Content-Length request header. If a
@@ -305,7 +253,6 @@ client_max_body_size = {{ kong_client_max_body_size }}
 # for further description of this parameter. Numeric values may be suffixed
 # with 'k' or 'm' to denote limits in terms of kilobytes or megabytes.
 
-client_body_buffer_size = {{ kong_client_body_buffer_size }}
 #client_body_buffer_size = 8k    # Defines the buffer size for reading the
                                  # request body. If the client request body is
                                  # larger than this value, the body will be
@@ -324,7 +271,6 @@ client_body_buffer_size = {{ kong_client_body_buffer_size }}
 # for further description of this parameter. Numeric values may be suffixed
 # with 'k' or 'm' to denote limits in terms of kilobytes or megabytes.
 
-error_default_type = {{ kong_error_default_type|default('text/plain') }}
 #error_default_type = text/plain  # Default MIME type to use when the request
                                   # `Accept` header is missing and Nginx
                                   # is returning an error for the request.
@@ -342,21 +288,11 @@ error_default_type = {{ kong_error_default_type|default('text/plain') }}
 # All Kong nodes belonging to the same cluster must connect themselves to the
 # same database.
 
-database = {{ kong_database }}
 #database = postgres             # Determines which of PostgreSQL or Cassandra
                                  # this node will use as its datastore.
                                  # Accepted values are `postgres` and
                                  # `cassandra`.
-{% if kong_database == 'postgres' %}
-pg_host = {{ kong_pg_host }}
-pg_port = {{ kong_pg_port }}
-pg_user = {{ kong_pg_user|default('kong') }}
-pg_password = {{ kong_pg_password|default('kong') }}
-pg_database = {{ kong_pg_database|default('kong') }}
-pg_ssl = {{ kong_pg_ssl|default('off')|lower }}
-pg_ssl_verify = {{ kong_pg_ssl_verify|default('off')|lower }}
 
-{% endif %}
 #pg_host = 127.0.0.1             # The PostgreSQL host to connect to.
 #pg_port = 5432                  # The port to connect to.
 #pg_user = kong                  # The username to authenticate if required.
@@ -371,26 +307,6 @@ pg_ssl_verify = {{ kong_pg_ssl_verify|default('off')|lower }}
                                  # See the `lua_ssl_trusted_certificate`
                                  # setting to specify a certificate authority.
 
-{% if kong_database == 'cassandra' %}
-cassandra_contact_points = {{ kong_cassandra_contact_points|join(',') }}
-cassandra_port = {{ kong_cassandra_port }}
-cassandra_keyspace = {{ kong_cassandra_keyspace|default('kong') }}
-cassandra_timeout = {{ kong_cassandra_timeout }}
-cassandra_ssl = {{ kong_cassandra_ssl|default('off')|lower }}
-cassandra_ssl_verify = {{ kong_cassandra_ssl_verify|default('off')|lower }}
-cassandra_username = {{ kong_cassandra_username }}
-cassandra_password = {{ kong_cassandra_password }}
-cassandra_data_centers = {{ kong_cassandra_data_centers|join(',') }}
-cassandra_consistency = {{ kong_cassandra_consistency }}
-cassandra_lb_policy = {{ kong_cassandra_lb_policy|default('RoundRobin') }}
-{% if kong_cassandra_lb_policy == 'DCAwareRoundRobin' %}
-cassandra_local_datacenter = {{ kong_cassandra_local_datacenter }}
-{% endif %}
-cassandra_repl_strategy = {{ kong_cassandra_repl_strategy }}
-cassandra_repl_factor = {{ kong_cassandra_repl_factor }}
-cassandra_schema_consensus_timeout = {{ kong_cassandra_schema_consensus_timeout|default(10000) }}
-
-{% endif %}
 #cassandra_contact_points = 127.0.0.1  # A comma-separated list of contact
                                        # points to your cluster.
 
@@ -469,7 +385,6 @@ cassandra_schema_consensus_timeout = {{ kong_cassandra_schema_consensus_timeout|
 # This section allows for configuring the behavior of Kong regarding the
 # caching of such configuration entities.
 
-db_update_frequency = {{ kong_db_update_frequency }}
 #db_update_frequency = 5         # Frequency (in seconds) at which to check for
                                  # updated entities with the datastore.
                                  # When a node creates, updates, or deletes an
@@ -478,7 +393,6 @@ db_update_frequency = {{ kong_db_update_frequency }}
                                  # this value) to eventually purge the old
                                  # cached entity and start using the new one.
 
-db_update_propagation = {{ kong_db_update_propagation }}
 #db_update_propagation = 0       # Time (in seconds) taken for an entity in the
                                  # datastore to be propagated to replica nodes
                                  # of another datacenter.
@@ -494,7 +408,6 @@ db_update_propagation = {{ kong_db_update_propagation }}
                                  # servers should suffer no such delays, and
                                  # this value can be safely set to 0.
 
-db_cache_ttl = {{ kong_db_cache_ttl }}
 #db_cache_ttl = 3600             # Time-to-live (in seconds) of an entity from
                                  # the datastore when cached by this node.
                                  # Database misses (no entity) are also cached
@@ -511,9 +424,6 @@ db_cache_ttl = {{ kong_db_cache_ttl }}
 # overridden by the environment variables `LOCALDOMAIN` and `RES_OPTIONS` if
 # they have been set.
 
-{% if kong_dns_resolver %}
-dns_resolver = {{ kong_dns_resolver }}
-{% endif %}
 #dns_resolver =                  # Comma separated list of nameservers, each
                                  # entry in `ip[:port]` format to be used by
                                  # Kong. If not specified the nameservers in
@@ -521,20 +431,17 @@ dns_resolver = {{ kong_dns_resolver }}
                                  # Port defaults to 53 if omitted. Accepts
                                  # both IPv4 and IPv6 addresses.
 
-dns_hostsfile = {{ kong_dns_hostsfile }}
 #dns_hostsfile = /etc/hosts      # The hosts file to use. This file is read
                                  # once and its content is static in memory.
                                  # To read the file again after modifying it,
                                  # Kong must be reloaded.
 
-dns_order = {{ kong_dns_order }}
 #dns_order = LAST,SRV,A,CNAME    # The order in which to resolve different
                                  # record types. The `LAST` type means the
                                  # type of the last successful lookup (for the
                                  # specified name). The format is a (case
                                  # insensitive) comma separated list.
 
-dns_stale_ttl = {{ kong_dns_stale_ttl }}
 #dns_stale_ttl = 4               # Defines, in seconds, how long a record will
                                  # remain in cache past its TTL. This value
                                  # will be used while the new DNS record is
@@ -544,14 +451,11 @@ dns_stale_ttl = {{ kong_dns_stale_ttl }}
                                  # completes, or the `dns_stale_ttl` number of
                                  # seconds have passed.
 
-dns_not_found_ttl = {{ kong_dns_not_found_ttl }}
 #dns_not_found_ttl = 30          # TTL in seconds for empty DNS responses and
                                  # "(3) name error" responses.
 
-dns_error_ttl = {{ kong_dns_error_ttl }}
 #dns_error_ttl = 1               # TTL in seconds for error responses.
 
-dns_no_sync  = {{ kong_dns_no_sync }}
 #dns_no_sync = off               # If enabled, then upon a cache-miss every
                                  # request will trigger its own dns query.
                                  # When disabled multiple requests for the
@@ -568,7 +472,6 @@ dns_no_sync  = {{ kong_dns_no_sync }}
 # See the lua-nginx-module documentation for more informations:
 # https://github.com/openresty/lua-nginx-module
 
-lua_ssl_trusted_certificate =   {{ kong_lua_ssl_trusted_certificate }}
 #lua_ssl_trusted_certificate =   # Absolute path to the certificate
                                  # authority file for Lua cosockets in PEM
                                  # format. This certificate will be the one
@@ -576,25 +479,20 @@ lua_ssl_trusted_certificate =   {{ kong_lua_ssl_trusted_certificate }}
                                  # connections, when `pg_ssl_verify` or
                                  # `cassandra_ssl_verify` are enabled.
 
-lua_ssl_verify_depth = {{ kong_lua_ssl_verify_depth }}
 #lua_ssl_verify_depth = 1        # Sets the verification depth in the server
                                  # certificates chain used by Lua cosockets,
                                  # set by `lua_ssl_trusted_certificate`.
                                  # This includes the certificates configured
                                  # for Kong's database connections.
 
-lua_package_path = {{ kong_lua_package_path }}
 #lua_package_path =              # Sets the Lua module search path (LUA_PATH).
                                  # Useful when developing or using custom
                                  # plugins not stored in the default search
                                  # path.
 
-lua_package_cpath = {{ kong_lua_package_cpath }}
 #lua_package_cpath =             # Sets the Lua C module search path
                                  # (LUA_CPATH).
 
-lua_socket_pool_size = {{ kong_lua_socket_pool_size }}
 #lua_socket_pool_size = 30       # Specifies the size limit for every cosocket
                                  # connection pool associated with every remote
                                  # server.
-
