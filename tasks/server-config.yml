@@ -105,6 +105,18 @@
 
 - name: Copy over kong systemd service unit
   template:
+    src: 0.13.x-kong.service.j2
+    dest: "{{ kong_systemd_units_dir }}/kong.service"
+    owner: root
+    group: root
+    mode:  0644
+  notify:
+    - Reload systemd
+    - Restart kong
+  when: kong_version is version_compare('2.7.0', '<')
+
+- name: Copy over kong systemd service unit | since v2.7.0
+  template:
     src: kong.service.j2
     dest: "{{ kong_systemd_units_dir }}/kong.service"
     owner: root
@@ -113,6 +125,7 @@
   notify:
     - Reload systemd
     - Restart kong
+  when: kong_version is version_compare('2.7.0', '>=')
 
 - name: Start kong
   service:
