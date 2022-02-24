@@ -90,7 +90,16 @@
       kong migrations up --conf {{ kong_conf_dir }}/kong.conf
   environment:
     PATH: "{{ ansible_env.PATH }}:/usr/local/bin"
-  when: run_status == "down"
+  when: run_status == "down" and kong_version is version_compare('2.7.0', '<')
+  run_once: true
+  register: migration
+
+- name: Bootstrap the database and run all migrations.
+  shell: >
+      kong migrations bootstrap --conf {{ kong_conf_dir }}/kong.conf
+  environment:
+    PATH: "{{ ansible_env.PATH }}:/usr/local/bin"
+  when: run_status == "down" and kong_version is version_compare('2.7.0', '>=')
   run_once: true
   register: migration
 
